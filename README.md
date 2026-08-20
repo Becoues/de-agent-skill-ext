@@ -1,11 +1,11 @@
-# de-agent-skills
+# de-agent-skill-ext
 
 给 AI 编码助手（Claude Code 等）用的团队协作规范 skill，由数据工程（DE）维护。
 
 ## 安装
 
 ```bash
-npx -y skills add vast-enterprise/de-agent-skills --all -g
+npx -y skills add Becoues/de-agent-skill-ext --all -g
 ```
 
 `-g` 装到用户级，所有仓库都生效，只需装一次。想只对当前仓生效就去掉 `-g`。
