@@ -5,10 +5,12 @@
 ## 安装
 
 ```bash
-npx -y skills add Becoues/de-agent-skill-ext --all -g
+npx -y skills add Becoues/de-agent-skill-ext -s '*' -a claude-code -y -g
 ```
 
-`-g` 装到用户级，所有仓库都生效，只需装一次。想只对当前仓生效就去掉 `-g`。
+`-g` 装到用户级（`~/.claude/skills/`），所有仓库都生效，只需装一次；想只对当前仓生效就去掉 `-g`。
+
+显式写 `-a claude-code` 是有必要的：不加它，CLI 在识别不到 agent 的目录里会装到 `agent/skills/` 和 `.agents/skills/`，Claude Code 读不到。
 
 装完再配一个 hook（让判定不依赖模型自觉，且不占基础上下文）：见 [`data-change-notify/references/hook-setup.md`](data-change-notify/references/hook-setup.md)，或直接对 Claude Code 说「按 data-change-notify 的 hook-setup 配好 hook」。
 
