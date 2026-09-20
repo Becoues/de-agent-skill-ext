@@ -4,7 +4,7 @@
 
 skill 的触发是**概率性的**——模型读了 description 自己决定要不要调用。改一行 migration 就漏掉判定完全可能。
 
-hook 是**确定性的**：由 Claude Code 本体执行，与模型判断无关。而且 hook **不占基础上下文**（它不在 prompt 里，只有真触发时那一行输出才进入对话）。
+hook 是**确定性的**：由 Claude Code 本体执行，与模型判断无关。而且 hook **不占基础上下文**（它不在 prompt 里，只有命中路径时才通过 `additionalContext` 把提醒加入模型上下文）。
 
 两者配合：hook 负责「一定会被提醒」，skill 负责「提醒之后怎么判」。
 
@@ -24,7 +24,7 @@ hook 是**确定性的**：由 Claude Code 本体执行，与模型判断无关�
         "hooks": [
           {
             "type": "command",
-            "command": "p=$(grep -oE '\"file_path\"[^,]*' | head -1); case \"$p\" in *migrat*|*alembic*|*schema*|*entity*|*.sql*|*nacos*|*ddl*) echo '数据变更提醒：此改动可能影响数据仓库。请用 data-change-notify 判定是否需周知数据工程；不确定就按需要周知处理。';; esac"
+            "command": "p=$(grep -oE '\"file_path\"[^,]*' | head -1); case \"$p\" in *migrat*|*alembic*|*schema*|*entity*|*.sql*|*nacos*|*ddl*) printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"数据变更提醒：此改动可能影响数据仓库。请用 data-change-notify 判定是否需周知数据工程；不确定就按需要周知处理。\"}}';; esac"
           }
         ]
       }
@@ -39,7 +39,9 @@ hook 是**确定性的**：由 Claude Code 本体执行，与模型判断无关�
 
 ## 验证
 
-配完后随便编辑一个路径里带 `migration` 的文件，应当看到那行提醒。没看到就检查 JSON 是否合法、以及是否放在了生效的那个 settings 文件里。
+配完后编辑一个路径里带 `migration` 的文件，检查 hook 调试日志：命中时应输出合法 JSON，包含 `hookSpecificOutput.hookEventName: "PostToolUse"` 和 `hookSpecificOutput.additionalContext`；无关路径应无输出。
+
+`additionalContext` 会交给模型，聊天界面未必单独显示提醒。`PostToolUse` 以退出码 0 输出的普通文本只写入调试日志，不能替代这个 JSON 字段。若模型未收到提醒，先检查输出 JSON 是否合法、以及配置是否放在生效的 settings 文件里。协议见 [Claude Code 的 PostToolUse 输出说明](https://code.claude.com/docs/en/hooks#posttooluse-decision-control)。
 
 ## 调这套匹配模式
 
@@ -53,6 +55,6 @@ hook 是**确定性的**：由 Claude Code 本体执行，与模型判断无关�
 
 ## 这个 hook 不做什么
 
-- **不阻断**任何操作。它只 echo 一行字，退出码始终为 0。
+- **不阻断**任何操作。它只通过 `additionalContext` 追加提醒，退出码始终为 0。
 - **不读文件内容**，只看 `file_path` 字段。
 - **不联网、不上报**。
